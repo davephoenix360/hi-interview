@@ -2,6 +2,7 @@
 
 import { Table, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useApi } from "@/api/context";
 import { Client } from "@/types/clients";
@@ -9,6 +10,7 @@ import { Client } from "@/types/clients";
 import styles from "./page.module.scss";
 
 export default function ClientsPage() {
+    const router = useRouter();
     const api = useApi();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
@@ -46,7 +48,11 @@ export default function ClientsPage() {
                 </Table.Thead>
                 <Table.Tbody>
                     {clients.map(client => (
-                        <Table.Tr key={client.id}>
+                        <Table.Tr
+                            key={client.id}
+                            onClick={() => router.push(`/clients/${client.id}`)}
+                            className={styles.clickableRow}
+                        >
                             <Table.Td>{client.first_name} {client.last_name}</Table.Td>
                             <Table.Td>{client.email}</Table.Td>
                             <Table.Td>{client.assigned_user_id ? "Yes" : "No"}</Table.Td>

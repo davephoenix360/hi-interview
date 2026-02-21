@@ -5,3 +5,11 @@
 .title {
     margin-bottom: var(--mantine-spacing-lg);
 }
+
+.clickableRow {
+    cursor: pointer;
+}
+
+.clickableRow:hover {
+    background-color: var(--mantine-color-gray-4);
+}

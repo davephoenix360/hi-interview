@@ -47,3 +47,22 @@ def test_list_clients_with_assigned_user(
     assigned = [c for c in data["data"] if c["email"] == "assigned@example.com"]
     assert len(assigned) == 1
     assert assigned[0]["assigned_user_id"] == user_id
+
+def test_get_nonexistent_client(test_client: TestClient) -> None:
+    response = test_client.get("/client/999999")
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Client not found"
+
+def test_get_existing_client(test_client: TestClient, database: DatabaseManager) -> None:
+    with database.create_session() as session:
+        session.add(Client(id="12345", email="alice@example.com", first_name="Alice", last_name="Smith"))
+        session.commit()
+
+    response = test_client.get(f"/client/{12345}")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["email"] == "alice@example.com"
+    assert data["first_name"] == "Alice"
+    assert data["last_name"] == "Smith"
