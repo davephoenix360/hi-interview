@@ -6,6 +6,20 @@
     margin-bottom: var(--mantine-spacing-lg);
 }
 
+.section + .section {
+    margin-top: var(--mantine-spacing-xl);
+}
+
+.sectionTitle {
+    margin-bottom: var(--mantine-spacing-sm);
+}
+
+.emptyState {
+    padding: var(--mantine-spacing-md);
+    border: 1px dashed var(--mantine-color-gray-4);
+    border-radius: var(--mantine-radius-md);
+}
+
 .clickableRow {
     cursor: pointer;
 }

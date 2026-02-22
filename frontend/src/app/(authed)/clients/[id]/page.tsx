@@ -3,6 +3,7 @@
 import { isAxiosError } from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import {
     Alert,
     Badge,
@@ -85,6 +86,9 @@ export default function ClientDetailsPage() {
 
     const [client, setClient] = useState<ClientDetail | null>(null);
     const [viewState, setViewState] = useState<ViewState>("loading");
+    const [joiningTeam, setJoiningTeam] = useState(false);
+    const [joinTeamError, setJoinTeamError] = useState<string | null>(null);
+    const [isAdvisoryTeamExpanded, setIsAdvisoryTeamExpanded] = useState(true);
 
     useEffect(() => {
         if (!clientId) {
@@ -94,6 +98,7 @@ export default function ClientDetailsPage() {
 
         setViewState("loading");
         setClient(null);
+        setJoinTeamError(null);
 
         api.clients
             .getClientById(clientId)
@@ -205,7 +210,20 @@ export default function ClientDetailsPage() {
     }
 
     const fullName = `${client.first_name} ${client.last_name}`;
-    const isAssigned = Boolean(client.assigned_user_id);
+
+    const handleJoinAdvisoryTeam = async () => {
+        setJoiningTeam(true);
+        setJoinTeamError(null);
+
+        try {
+            const updatedClient = await api.clients.joinAdvisoryTeam(client.id);
+            setClient(updatedClient);
+        } catch {
+            setJoinTeamError("Unable to join advisory team right now. Please try again.");
+        } finally {
+            setJoiningTeam(false);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -214,11 +232,6 @@ export default function ClientDetailsPage() {
                     justify="space-between"
                     align="center">
                     <Title order={2}>{fullName}</Title>
-                    <Badge
-                        color={isAssigned ? "green" : "gray"}
-                        variant="light">
-                        {isAssigned ? "Assigned" : "Unassigned"}
-                    </Badge>
                 </Group>
 
                 <Card
@@ -295,6 +308,82 @@ export default function ClientDetailsPage() {
                                 </Tooltip>
                             </Stack>
                         </SimpleGrid>
+                    </Stack>
+                </Card>
+
+                <Card
+                    withBorder
+                    radius="md"
+                    padding="lg">
+                    <Stack gap="sm">
+                        <Group
+                            justify="space-between"
+                            align="center"
+                            wrap="wrap">
+                            <Group 
+                                gap="sm" 
+                                wrap="wrap">
+                                <Title order={4}>
+                                    Advisory team
+                                    {!isAdvisoryTeamExpanded && ` (${client.advisors.length})`}
+                                </Title>
+                                <Button
+                                    variant="subtle"
+                                    size="compact-sm"
+                                    px={6}
+                                    aria-label={isAdvisoryTeamExpanded ? "Minimize advisory team" : "Maximize advisory team"}
+                                    onClick={() => setIsAdvisoryTeamExpanded(expanded => !expanded)}>
+                                    {isAdvisoryTeamExpanded ? <IconChevronUp stroke={2} /> : <IconChevronDown stroke={2} />}
+                                </Button>
+                            </Group>
+                            {!client.is_my_client && (
+                                <Button
+                                    onClick={handleJoinAdvisoryTeam}
+                                    loading={joiningTeam}>
+                                    Join advisory team
+                                </Button>
+                            )}
+                        </Group>
+                        {joinTeamError && (
+                            <Alert
+                                color="red"
+                                title="Could not join team">
+                                {joinTeamError}
+                            </Alert>
+                        )}
+                        {isAdvisoryTeamExpanded && (
+                            client.advisors.length === 0 ? (
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    No advisors on this client yet.
+                                </Text>
+                            ) : (
+                                <Stack gap="xs">
+                                    {client.advisors.map(advisor => (
+                                        <Group
+                                            key={advisor.id}
+                                            justify="space-between"
+                                            className={styles.advisorRow}>
+                                            <div>
+                                                <Text>{advisor.email}</Text>
+                                                <Text
+                                                    size="xs"
+                                                    c="dimmed"
+                                                    ff="monospace">
+                                                    {advisor.id}
+                                                </Text>
+                                            </div>
+                                            <Badge
+                                                variant="light"
+                                                color={advisor.id === client.assigned_user_id ? "green" : "gray"}>
+                                                {advisor.id === client.assigned_user_id ? "Assigned" : "Advisor"}
+                                            </Badge>
+                                        </Group>
+                                    ))}
+                                </Stack>
+                            )
+                        )}
                     </Stack>
                 </Card>
 

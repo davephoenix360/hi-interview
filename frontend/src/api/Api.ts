@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 
-import { AuthData } from "@/types";
+import { AuthData, Me } from "@/types";
 
 import ClientsApi from "./clients";
 
@@ -91,6 +91,11 @@ export default class Api {
             .catch(() => {
                 return false;
             });
+    };
+
+    public me = async (): Promise<Me> => {
+        const response = await this.axiosInstance.get<{ data: Me }>("me");
+        return response.data.data;
     };
 
 }

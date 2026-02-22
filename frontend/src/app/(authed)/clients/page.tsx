@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, Title } from "@mantine/core";
+import { Table, Text, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -25,14 +25,22 @@ export default function ClientsPage() {
         return <div className={styles.container}>Loading...</div>;
     }
 
-    return (
-        <div className={styles.container}>
-            <Title
-                order={2}
-                className={styles.title}
-            >
-                Clients
-            </Title>
+    const myClients = clients.filter(client => client.is_my_client);
+    const otherClients = clients.filter(client => !client.is_my_client);
+
+    const renderTable = (items: ClientListItem[], emptyMessage: string) => {
+        if (items.length === 0) {
+            return (
+                <Text
+                    size="sm"
+                    c="dimmed"
+                    className={styles.emptyState}>
+                    {emptyMessage}
+                </Text>
+            );
+        }
+
+        return (
             <Table
                 striped
                 highlightOnHover
@@ -47,7 +55,7 @@ export default function ClientsPage() {
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                    {clients.map(client => (
+                    {items.map(client => (
                         <Table.Tr
                             key={client.id}
                             onClick={() => router.push(`/clients/${client.id}`)}
@@ -60,6 +68,33 @@ export default function ClientsPage() {
                     ))}
                 </Table.Tbody>
             </Table>
+        );
+    };
+
+    return (
+        <div className={styles.container}>
+            <Title
+                order={2}
+                className={styles.title}
+            >
+                Clients
+            </Title>
+            <div className={styles.section}>
+                <Title
+                    order={4}
+                    className={styles.sectionTitle}>
+                    My Clients
+                </Title>
+                {renderTable(myClients, "No clients on your advisory team yet.")}
+            </div>
+            <div className={styles.section}>
+                <Title
+                    order={4}
+                    className={styles.sectionTitle}>
+                    Other Clients
+                </Title>
+                {renderTable(otherClients, "No other clients available.")}
+            </div>
         </div>
     );
 }

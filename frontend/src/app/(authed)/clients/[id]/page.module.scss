@@ -6,6 +6,12 @@
     line-break: anywhere;
 }
 
+.advisorRow {
+    padding: var(--mantine-spacing-sm);
+    border: 1px solid var(--mantine-color-gray-3);
+    border-radius: var(--mantine-radius-md);
+}
+
 .stateContainer {
     max-width: 420px;
 }

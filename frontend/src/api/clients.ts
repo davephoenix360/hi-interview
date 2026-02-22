@@ -18,4 +18,9 @@ export default class ClientsApi {
         const response = await this.axiosInstance.get<{ data: ClientDetail }>(`client/${clientId}`);
         return response.data.data;
     };
+
+    public joinAdvisoryTeam = async (clientId: string): Promise<ClientDetail> => {
+        const response = await this.axiosInstance.post<{ data: ClientDetail }>(`client/${clientId}/advisors/me`);
+        return response.data.data;
+    };
 }
