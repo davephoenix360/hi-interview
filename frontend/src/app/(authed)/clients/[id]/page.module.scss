@@ -2,10 +2,44 @@
     padding: var(--mantine-spacing-xl);
 }
 
+.sectionBlock {
+    gap: var(--mantine-spacing-sm);
+}
+
+.sectionCard {
+    background: var(--mantine-color-body);
+}
+
+.sectionHeader {
+    min-width: 0;
+}
+
+.advisorsTitleRow {
+    min-width: 0;
+}
+
+.advisorCount {
+    font-variant-numeric: tabular-nums;
+}
+
+.advisorList {
+    margin-top: var(--mantine-spacing-xs);
+}
+
 .advisorRow {
-    padding: var(--mantine-spacing-sm);
+    padding: calc(var(--mantine-spacing-xs) + 2px) var(--mantine-spacing-sm);
     border: 1px solid var(--mantine-color-gray-3);
     border-radius: var(--mantine-radius-md);
+    background: var(--mantine-color-gray-0);
+    gap: var(--mantine-spacing-sm);
+}
+
+.advisorIdentity {
+    min-width: 0;
+}
+
+.advisorEmail {
+    line-break: anywhere;
 }
 
 .stateContainer {

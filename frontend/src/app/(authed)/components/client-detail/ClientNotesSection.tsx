@@ -2,10 +2,12 @@
 
 import { isAxiosError } from "axios";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { IconTrash } from "@tabler/icons-react";
 import {
     Alert,
     Button,
     Card,
+    Divider,
     Group,
     Modal,
     Skeleton,
@@ -30,18 +32,14 @@ interface ClientNotesSectionProps {
     clientId: string;
 }
 
-function getNotePreview(body: string, maxLength = 160): string {
+function getNotePreview(body: string): string {
     const normalized = body.replace(/\s+/g, " ").trim();
 
     if (!normalized) {
         return "Empty note";
     }
 
-    if (normalized.length <= maxLength) {
-        return normalized;
-    }
-
-    return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+    return normalized;
 }
 
 export default function ClientNotesSection({ clientId }: ClientNotesSectionProps) {
@@ -51,6 +49,11 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
     const [notesLoading, setNotesLoading] = useState(true);
     const [notesError, setNotesError] = useState<string | null>(null);
     const [notesActionError, setNotesActionError] = useState<string | null>(null);
+    const [notesActionNotice, setNotesActionNotice] = useState<{
+        color: "green" | "red";
+        title: string;
+        message: string;
+    } | null>(null);
     const [creatingNote, setCreatingNote] = useState(false);
     const [me, setMe] = useState<Me | null>(null);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -81,6 +84,20 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
             isCancelled = true;
         };
     }, [api]);
+
+    useEffect(() => {
+        if (!notesActionNotice) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            setNotesActionNotice(null);
+        }, 4000);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [notesActionNotice]);
 
     useEffect(() => {
         if (!clientId) {
@@ -226,7 +243,7 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
         selectedNote.author_user_id === me.id;
 
     const handleSaveNote = async () => {
-        if (!selectedNote) {
+        if (!selectedNote || savingNote || deletingNote) {
             return;
         }
 
@@ -250,10 +267,11 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
     };
 
     const handleDeleteNote = async () => {
-        if (!selectedNote) {
+        if (!selectedNote || deletingNote || savingNote) {
             return;
         }
 
+        const noteId = selectedNote.id;
         const confirmed = window.confirm("Delete this note? This action cannot be undone.");
         if (!confirmed) {
             return;
@@ -261,21 +279,33 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
 
         setDeletingNote(true);
         setNoteModalError(null);
+        setNotesActionNotice(null);
 
         try {
-            await api.clients.deleteNote(clientId, selectedNote.id);
+            await api.clients.deleteNote(clientId, noteId);
             setNotes(currentNotes =>
-                currentNotes.filter(note => note.id !== selectedNote.id)
+                currentNotes.filter(note => note.id !== noteId)
             );
             closeNoteModal();
+            setNotesActionNotice({
+                color: "green",
+                title: "Note deleted",
+                message: "The note was deleted successfully.",
+            });
             await refreshNotes();
         } catch (error) {
-            setNoteModalError(
-                getRequestErrorMessage(
-                    error,
-                    "Unable to delete note right now. Please try again."
-                )
+            const message = getRequestErrorMessage(
+                error,
+                "Unable to delete note right now. Please try again."
             );
+            setNoteModalError(
+                message
+            );
+            setNotesActionNotice({
+                color: "red",
+                title: "Delete failed",
+                message,
+            });
         } finally {
             setDeletingNote(false);
         }
@@ -314,6 +344,14 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                             color="red"
                             title="Could not create note">
                             {notesActionError}
+                        </Alert>
+                    )}
+
+                    {notesActionNotice && (
+                        <Alert
+                            color={notesActionNotice.color}
+                            title={notesActionNotice.title}>
+                            {notesActionNotice.message}
                         </Alert>
                     )}
 
@@ -387,15 +425,21 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                                             <Stack gap="xs">
                                                 <Group
                                                     justify="space-between"
-                                                    align="flex-start"
-                                                    wrap="wrap">
-                                                    <Text fw={500}>{getNoteAuthorLabel(note)}</Text>
+                                                    align="center"
+                                                    wrap="wrap"
+                                                    className={styles.noteCardMetaRow}>
+                                                    <Text
+                                                        fw={500}
+                                                        className={styles.noteCardAuthor}>
+                                                        {getNoteAuthorLabel(note)}
+                                                    </Text>
                                                     <Tooltip
                                                         label={formatExactDate(timestampSource)}
                                                         withArrow>
                                                         <Text
                                                             size="xs"
-                                                            c="dimmed">
+                                                            c="dimmed"
+                                                            className={styles.noteCardTimestamp}>
                                                             {timestampLabel}
                                                         </Text>
                                                     </Tooltip>
@@ -427,26 +471,35 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                     <Stack gap="md">
                         <Group
                             justify="space-between"
-                            align="flex-start"
+                            align="center"
                             wrap="wrap">
-                            <div>
-                                <Text fw={500}>{getNoteAuthorLabel(selectedNote)}</Text>
+                            <Group
+                                gap="sm"
+                                wrap="wrap"
+                                className={styles.noteModalMetaRow}>
+                                <Text
+                                    fw={600}
+                                    className={styles.noteModalAuthor}>
+                                    {getNoteAuthorLabel(selectedNote)}
+                                </Text>
                                 <Tooltip
                                     label={formatExactDate(selectedNote.updated_at)}
                                     withArrow>
                                     <Text
                                         size="sm"
-                                        c="dimmed">
+                                        c="dimmed"
+                                        className={styles.noteModalTimestamp}>
                                         {selectedNote.updated_at !== selectedNote.created_at
                                             ? `Edited ${formatRelativeDate(selectedNote.updated_at)}`
                                             : formatRelativeDate(selectedNote.created_at)}
                                     </Text>
                                 </Tooltip>
-                            </div>
+                            </Group>
                             {isSelectedNoteAuthor && noteModalMode === "view" && (
                                 <Button
-                                    variant="light"
+                                    variant="default"
                                     size="xs"
+                                    disabled={savingNote || deletingNote}
                                     onClick={() => {
                                         setNoteDraftBody(selectedNote.body);
                                         setNoteModalError(null);
@@ -456,6 +509,8 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                                 </Button>
                             )}
                         </Group>
+
+                        <Divider />
 
                         {noteModalError && (
                             <Alert
@@ -495,6 +550,7 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                         ) : (
                             <div className={styles.noteBody}>
                                 <Text
+                                    size="sm"
                                     c={selectedNote.body.trim() ? undefined : "dimmed"}
                                     className={styles.noteBodyText}>
                                     {selectedNote.body.trim()
@@ -508,19 +564,20 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                             justify="space-between"
                             align="center"
                             wrap="wrap">
-                            <Group>
+                            <Group gap="xs">
                                 {isSelectedNoteAuthor && (
                                     <Button
                                         color="red"
                                         variant="light"
+                                        leftSection={<IconTrash size={16} />}
                                         onClick={handleDeleteNote}
                                         loading={deletingNote}
-                                        disabled={savingNote}>
+                                        disabled={savingNote || deletingNote}>
                                         Delete
                                     </Button>
                                 )}
                             </Group>
-                            <Group>
+                            <Group gap="xs">
                                 {noteModalMode === "edit" && isSelectedNoteAuthor && (
                                     <Button
                                         variant="default"

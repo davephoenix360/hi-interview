@@ -9,6 +9,7 @@ import {
     Badge,
     Button,
     Card,
+    Divider,
     Group,
     Skeleton,
     Stack,
@@ -184,24 +185,45 @@ export default function ClientDetailsPage() {
                     </Group>
                 </Stack>
 
-                <ClientOverviewCard client={client} />
+                <Divider />
+
+                <Stack
+                    gap="sm"
+                    className={styles.sectionBlock}>
+                    <Group
+                        justify="space-between"
+                        align="center"
+                        wrap="wrap"
+                        className={styles.sectionHeader}>
+                        <Title order={4}>Client info</Title>
+                    </Group>
+                    <ClientOverviewCard client={client} />
+                </Stack>
+
+                <Divider />
 
                 <Card
                     withBorder
                     radius="md"
-                    padding="lg">
-                    <Stack gap="sm">
+                    padding="lg"
+                    className={styles.sectionCard}>
+                    <Stack gap="xs">
                         <Group
                             justify="space-between"
                             align="center"
-                            wrap="wrap">
-                            <Group 
-                                gap="sm" 
-                                wrap="wrap">
-                                <Title order={4}>
-                                    Advisory team
-                                    {!isAdvisoryTeamExpanded && ` (${client.advisors.length})`}
-                                </Title>
+                            wrap="wrap"
+                            className={styles.sectionHeader}>
+                            <Group
+                                gap="xs"
+                                wrap="wrap"
+                                className={styles.advisorsTitleRow}>
+                                <Title order={4}>Advisors</Title>
+                                <Badge
+                                    variant="light"
+                                    color="gray"
+                                    className={styles.advisorCount}>
+                                    {client.advisors.length}
+                                </Badge>
                                 <Button
                                     variant="subtle"
                                     size="compact-sm"
@@ -213,6 +235,7 @@ export default function ClientDetailsPage() {
                             </Group>
                             {!client.is_my_client && (
                                 <Button
+                                    size="sm"
                                     onClick={handleJoinAdvisoryTeam}
                                     loading={joiningTeam}>
                                     Join advisory team
@@ -234,14 +257,18 @@ export default function ClientDetailsPage() {
                                     No advisors on this client yet.
                                 </Text>
                             ) : (
-                                <Stack gap="xs">
+                                <Stack
+                                    gap={6}
+                                    className={styles.advisorList}>
                                     {client.advisors.map(advisor => (
                                         <Group
                                             key={advisor.id}
                                             justify="space-between"
                                             className={styles.advisorRow}>
-                                            <div>
-                                                <Text>{advisor.email}</Text>
+                                            <div className={styles.advisorIdentity}>
+                                                <Text className={styles.advisorEmail}>
+                                                    {advisor.email}
+                                                </Text>
                                                 <Text
                                                     size="xs"
                                                     c="dimmed"
@@ -261,6 +288,8 @@ export default function ClientDetailsPage() {
                         )}
                     </Stack>
                 </Card>
+
+                <Divider />
 
                 <ClientNotesSection clientId={client.id} />
             </Stack>

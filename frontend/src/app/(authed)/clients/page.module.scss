@@ -3,11 +3,31 @@
 }
 
 .header {
+    display: grid;
+    gap: var(--mantine-spacing-sm);
+    position: sticky;
+    top: 0;
+    z-index: 10;
     margin-bottom: var(--mantine-spacing-lg);
+    padding: var(--mantine-spacing-sm) 0;
+    background: var(--mantine-color-body);
+    border-bottom: 1px solid var(--mantine-color-gray-2);
 }
 
 .title {
     margin-bottom: 0;
+}
+
+.headerContent {
+    min-width: 0;
+}
+
+.headerCounts {
+    margin-top: var(--mantine-spacing-xs);
+}
+
+.searchInput {
+    max-width: 520px;
 }
 
 .section + .section {

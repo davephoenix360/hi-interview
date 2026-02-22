@@ -10,6 +10,7 @@
     width: 100%;
     text-align: left;
     border-radius: var(--mantine-radius-md);
+    cursor: pointer;
 }
 
 .noteCardButton:focus-visible {
@@ -20,6 +21,7 @@
 .noteCard {
     transition:
         border-color 120ms ease,
+        box-shadow 120ms ease,
         background-color 120ms ease,
         transform 120ms ease;
 }
@@ -27,7 +29,20 @@
 .noteCardButton:hover .noteCard {
     border-color: var(--mantine-primary-color-light-color);
     background: var(--mantine-primary-color-0);
+    box-shadow: var(--mantine-shadow-xs);
     transform: translateY(-1px);
+}
+
+.noteCardMetaRow {
+    min-width: 0;
+}
+
+.noteCardAuthor {
+    line-break: anywhere;
+}
+
+.noteCardTimestamp {
+    white-space: nowrap;
 }
 
 .notePreview {
@@ -35,9 +50,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-break: anywhere;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
 }
 
 .noteBody {
@@ -48,7 +64,20 @@
     min-height: 120px;
 }
 
+.noteModalMetaRow {
+    min-width: 0;
+}
+
+.noteModalAuthor {
+    line-break: anywhere;
+}
+
+.noteModalTimestamp {
+    white-space: nowrap;
+}
+
 .noteBodyText {
     white-space: pre-wrap;
-    line-break: anywhere;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
 }

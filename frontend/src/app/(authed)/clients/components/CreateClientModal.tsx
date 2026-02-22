@@ -10,7 +10,7 @@ import {
     Stack,
     TextInput,
 } from "@mantine/core";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useApi } from "@/api/context";
@@ -153,6 +153,40 @@ export default function CreateClientModal({
         }
     };
 
+    const handleFormKeyDown = (event: ReactKeyboardEvent<HTMLFormElement>) => {
+        if (
+            event.key !== "Enter" ||
+            event.defaultPrevented ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.altKey ||
+            event.shiftKey
+        ) {
+            return;
+        }
+
+        const target = event.target;
+        if (!(target instanceof HTMLElement) || target.isContentEditable) {
+            return;
+        }
+
+        if (target instanceof HTMLTextAreaElement) {
+            return;
+        }
+
+        if (!(target instanceof HTMLInputElement)) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (creatingClient) {
+            return;
+        }
+
+        event.currentTarget.requestSubmit();
+    };
+
     return (
         <Modal
             opened={opened}
@@ -162,6 +196,7 @@ export default function CreateClientModal({
             closeOnEscape={!creatingClient}>
             <form
                 onSubmit={handleSubmit}
+                onKeyDown={handleFormKeyDown}
                 className={styles.form}>
                 <Stack gap="md">
                     <TextInput

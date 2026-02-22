@@ -6,10 +6,12 @@ import {
     Notification,
     Table,
     Text,
+    TextInput,
     Title,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconSearch } from "@tabler/icons-react";
 
 import { useApi } from "@/api/context";
 import { ClientListItem } from "@/types/clients";
@@ -31,6 +33,7 @@ export default function ClientsPage() {
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [toast, setToast] = useState<ToastState>(null);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const showToast = (nextToast: CreateClientToast) => {
         setToast({
@@ -88,8 +91,31 @@ export default function ClientsPage() {
         setClients(refreshedClients);
     };
 
-    const myClients = clients.filter(client => client.is_my_client);
-    const otherClients = clients.filter(client => !client.is_my_client);
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+    const hasSearchQuery = normalizedSearchQuery.length > 0;
+
+    const matchesSearch = (client: ClientListItem) => {
+        if (!hasSearchQuery) {
+            return true;
+        }
+
+        return [client.first_name, client.last_name, client.email]
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedSearchQuery);
+    };
+
+    const allMyClients = clients.filter(client => client.is_my_client);
+    const allOtherClients = clients.filter(client => !client.is_my_client);
+    const myClients = allMyClients.filter(matchesSearch);
+    const otherClients = allOtherClients.filter(matchesSearch);
+    const totalVisibleClients = myClients.length + otherClients.length;
+
+    const formatSectionCount = (visibleCount: number, totalCount: number) => (
+        hasSearchQuery
+            ? `${visibleCount} of ${totalCount}`
+            : `${totalCount}`
+    );
 
     if (loading) {
         return <div className={styles.container}>Loading...</div>;
@@ -153,35 +179,89 @@ export default function ClientsPage() {
             )}
 
             <div className={styles.container}>
-                <Group
-                    justify="space-between"
-                    align="center"
-                    className={styles.header}>
-                    <Title
-                        order={2}
-                        className={styles.title}
-                    >
-                        Clients
-                    </Title>
-                    <Button onClick={openCreateModal}>New client</Button>
-                </Group>
+                <div className={styles.header}>
+                    <Group
+                        justify="space-between"
+                        align="flex-start"
+                        wrap="wrap">
+                        <div className={styles.headerContent}>
+                            <Title
+                                order={2}
+                                className={styles.title}
+                            >
+                                Clients
+                            </Title>
+                            <Group
+                                gap="md"
+                                wrap="wrap"
+                                className={styles.headerCounts}>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    My Clients ({formatSectionCount(myClients.length, allMyClients.length)})
+                                </Text>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    Other Clients ({formatSectionCount(otherClients.length, allOtherClients.length)})
+                                </Text>
+                            </Group>
+                        </div>
+                        <Button onClick={openCreateModal}>New client</Button>
+                    </Group>
 
-                <div className={styles.section}>
-                    <Title
-                        order={4}
-                        className={styles.sectionTitle}>
-                        My Clients
-                    </Title>
-                    {renderTable(myClients, "No clients on your advisory team yet.")}
+                    <TextInput
+                        value={searchQuery}
+                        onChange={event => setSearchQuery(event.currentTarget.value)}
+                        placeholder="Search by first name, last name, or email"
+                        leftSection={<IconSearch size={16} />}
+                        className={styles.searchInput}
+                    />
                 </div>
-                <div className={styles.section}>
-                    <Title
-                        order={4}
-                        className={styles.sectionTitle}>
-                        Other Clients
-                    </Title>
-                    {renderTable(otherClients, "No other clients available.")}
-                </div>
+
+                {hasSearchQuery && totalVisibleClients === 0 && (
+                    <div className={styles.section}>
+                        <div className={styles.emptyState}>
+                            <Text fw={500}>No matching clients</Text>
+                            <Text
+                                size="sm"
+                                c="dimmed">
+                                No clients match "{searchQuery.trim()}". Try a different name or email.
+                            </Text>
+                        </div>
+                    </div>
+                )}
+
+                {!(hasSearchQuery && totalVisibleClients === 0) && (
+                    <>
+                        <div className={styles.section}>
+                            <Title
+                                order={4}
+                                className={styles.sectionTitle}>
+                                My Clients
+                            </Title>
+                            {renderTable(
+                                myClients,
+                                hasSearchQuery
+                                    ? "No matching clients in your advisory team."
+                                    : "No clients on your advisory team yet."
+                            )}
+                        </div>
+                        <div className={styles.section}>
+                            <Title
+                                order={4}
+                                className={styles.sectionTitle}>
+                                Other Clients
+                            </Title>
+                            {renderTable(
+                                otherClients,
+                                hasSearchQuery
+                                    ? "No matching clients outside your advisory team."
+                                    : "No other clients available."
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
 
             <CreateClientModal
