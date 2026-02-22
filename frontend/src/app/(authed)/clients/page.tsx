@@ -5,14 +5,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useApi } from "@/api/context";
-import { Client } from "@/types/clients";
+import { ClientListItem } from "@/types/clients";
 
 import styles from "./page.module.scss";
 
 export default function ClientsPage() {
     const router = useRouter();
     const api = useApi();
-    const [clients, setClients] = useState<Client[]>([]);
+    const [clients, setClients] = useState<ClientListItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

@@ -7,3 +7,18 @@ export interface Client {
     created_at: string;
     updated_at: string;
 }
+
+export interface Advisor {
+    id: string;
+    email: string;
+}
+
+export interface ClientListItem extends Client {
+    is_my_client: boolean;
+    advisor_count: number;
+}
+
+export interface ClientDetail extends Client {
+    is_my_client: boolean;
+    advisors: Advisor[];
+}

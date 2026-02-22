@@ -19,7 +19,7 @@ import {
 } from "@mantine/core";
 
 import { useApi } from "@/api/context";
-import { Client } from "@/types/clients";
+import { ClientDetail } from "@/types/clients";
 
 import styles from "./page.module.scss";
 
@@ -83,7 +83,7 @@ export default function ClientDetailsPage() {
         return Array.isArray(params.id) ? params.id[0] : params.id;
     }, [params]);
 
-    const [client, setClient] = useState<Client | null>(null);
+    const [client, setClient] = useState<ClientDetail | null>(null);
     const [viewState, setViewState] = useState<ViewState>("loading");
 
     useEffect(() => {
