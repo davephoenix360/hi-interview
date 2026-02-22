@@ -37,3 +37,10 @@ export interface ClientDetail extends Client {
     is_my_client: boolean;
     advisors: Advisor[];
 }
+
+export interface ClientCreatePayload {
+    email: string;
+    first_name: string;
+    last_name: string;
+    add_me_as_advisor: boolean;
+}

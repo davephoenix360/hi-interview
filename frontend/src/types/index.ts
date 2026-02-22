@@ -14,6 +14,7 @@ export interface ApiError {
 export type {
     Advisor,
     Client,
+    ClientCreatePayload,
     ClientDetail,
     ClientListItem,
     Note,

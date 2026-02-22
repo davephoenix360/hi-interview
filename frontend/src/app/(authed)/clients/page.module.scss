@@ -2,8 +2,12 @@
     padding: var(--mantine-spacing-xl);
 }
 
-.title {
+.header {
     margin-bottom: var(--mantine-spacing-lg);
+}
+
+.title {
+    margin-bottom: 0;
 }
 
 .section + .section {
@@ -26,4 +30,12 @@
 
 .clickableRow:hover {
     background-color: var(--mantine-color-gray-4);
+}
+
+.toastContainer {
+    position: fixed;
+    top: var(--mantine-spacing-md);
+    right: var(--mantine-spacing-md);
+    z-index: 400;
+    width: min(420px, calc(100vw - (2 * var(--mantine-spacing-md))));
 }

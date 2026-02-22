@@ -9,8 +9,10 @@ from server.data.models.client_advisor import ClientAdvisor
 
 
 def create_client(session: Session, user_id: str, payload: PClientCreate) -> PClientDetail:
+    normalized_email = payload.email.strip().lower()
+
     existing_client_id = session.execute(
-        select(Client.id).where(func.lower(Client.email) == str(payload.email))
+        select(Client.id).where(func.lower(Client.email) == normalized_email)
     ).scalar_one_or_none()
     if existing_client_id is not None:
         raise HTTPException(
@@ -19,7 +21,7 @@ def create_client(session: Session, user_id: str, payload: PClientCreate) -> PCl
         )
 
     client = Client(
-        email=str(payload.email),
+        email=normalized_email,
         first_name=payload.first_name,
         last_name=payload.last_name,
     )
