@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi.testclient import TestClient
 
 from server.data.models.client import Client
@@ -192,3 +194,86 @@ def test_add_current_user_as_advisor_nonexistent_client(test_client: TestClient)
     assert response.status_code == 404
     data = response.json()
     assert data["detail"] == "Client not found"
+
+
+def test_create_client_defaults_to_adding_current_user_as_advisor(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    email = f"create-default-{uuid.uuid4().hex[:8]}@example.com"
+
+    response = test_client.post(
+        "/client",
+        json={
+            "email": f"  {email.upper()}  ",
+            "first_name": "  Jane ",
+            "last_name": " Doe  ",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["email"] == email
+    assert data["first_name"] == "Jane"
+    assert data["last_name"] == "Doe"
+    assert data["is_my_client"] is True
+    advisor_ids = [advisor["id"] for advisor in data["advisors"]]
+    assert user_id in advisor_ids
+    assert data["created_at"]
+    assert data["updated_at"]
+
+    with database.create_session() as session:
+        client = session.get(Client, data["id"])
+        assert client is not None
+        assert client.email == email
+        assignment = session.get(ClientAdvisor, (data["id"], user_id))
+        assert assignment is not None
+
+
+def test_create_client_can_skip_adding_current_user_as_advisor(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    response = test_client.post(
+        "/client",
+        json={
+            "email": f"create-no-advisor-{uuid.uuid4().hex[:8]}@example.com",
+            "first_name": "No",
+            "last_name": "Advisor",
+            "add_me_as_advisor": False,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["is_my_client"] is False
+    assert data["advisors"] == []
+
+    with database.create_session() as session:
+        assignment = session.get(ClientAdvisor, (data["id"], user_id))
+        assert assignment is None
+
+
+def test_create_client_rejects_duplicate_email(
+    test_client: TestClient, database: DatabaseManager
+) -> None:
+    existing_email = f"duplicate-{uuid.uuid4().hex[:8]}@example.com"
+    with database.create_session() as session:
+        session.add(
+            Client(
+                email=existing_email,
+                first_name="Existing",
+                last_name="Client",
+            )
+        )
+        session.commit()
+
+    response = test_client.post(
+        "/client",
+        json={
+            "email": f"  {existing_email.upper()}  ",
+            "first_name": "New",
+            "last_name": "Person",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Client with this email already exists"
