@@ -18,5 +18,5 @@ class ClientAdvisor(Base):
         String, ForeignKey("user.id"), primary_key=True, nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )

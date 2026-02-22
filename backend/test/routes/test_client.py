@@ -8,6 +8,10 @@ from server.data.models.user import User
 from server.shared.databasemanager import DatabaseManager
 
 
+def _assert_has_timezone_offset(value: str) -> None:
+    assert value.endswith("Z") or value.endswith("+00:00") or "+" in value[-6:]
+
+
 def test_list_clients(test_client: TestClient, database: DatabaseManager) -> None:
     with database.create_session() as session:
         session.add(Client(email="alice@example.com", first_name="Alice", last_name="Smith"))
@@ -220,6 +224,8 @@ def test_create_client_defaults_to_adding_current_user_as_advisor(
     assert user_id in advisor_ids
     assert data["created_at"]
     assert data["updated_at"]
+    _assert_has_timezone_offset(data["created_at"])
+    _assert_has_timezone_offset(data["updated_at"])
 
     with database.create_session() as session:
         client = session.get(Client, data["id"])
