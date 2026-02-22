@@ -3,7 +3,7 @@
 import { isAxiosError } from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { IconArrowLeft, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import {
     Alert,
     Badge,
@@ -107,24 +107,6 @@ export default function ClientDetailsPage() {
                                 width={200} />
                         </Stack>
                     </Card>
-                    <Card
-                        withBorder
-                        radius="md"
-                        padding="lg">
-                        <Stack gap="sm">
-                            <Skeleton
-                                height={20}
-                                width={120} />
-                            <Group>
-                                <Skeleton
-                                    height={32}
-                                    width={120} />
-                                <Skeleton
-                                    height={32}
-                                    width={120} />
-                            </Group>
-                        </Stack>
-                    </Card>
                 </Stack>
             </div>
         );
@@ -182,11 +164,25 @@ export default function ClientDetailsPage() {
     return (
         <div className={styles.container}>
             <Stack gap="lg">
-                <Group
-                    justify="space-between"
-                    align="center">
-                    <Title order={2}>{fullName}</Title>
-                </Group>
+                <Stack gap="xs">
+                    <Group>
+                        <Button
+                            variant="subtle"
+                            leftSection={<IconArrowLeft size={16} />}
+                            onClick={() => router.push("/clients")}>
+                            Back to clients
+                        </Button>
+                    </Group>
+                    <Group
+                        justify="space-between"
+                        align="center"
+                        wrap="wrap">
+                        <Title order={2}>{fullName}</Title>
+                        <ClientQuickActionsCard
+                            compact
+                            clientEmail={client.email} />
+                    </Group>
+                </Stack>
 
                 <ClientOverviewCard client={client} />
 
@@ -267,8 +263,6 @@ export default function ClientDetailsPage() {
                 </Card>
 
                 <ClientNotesSection clientId={client.id} />
-
-                <ClientQuickActionsCard clientEmail={client.email} />
             </Stack>
         </div>
     );
