@@ -59,3 +59,17 @@ def test_check_auth(test_client: TestClient) -> None:
 def test_check_auth_unauthenticated(unauthenticated_test_client: TestClient) -> None:
     response = unauthenticated_test_client.get("/check_auth")
     assert response.status_code == 401
+
+
+def test_get_me(test_client: TestClient, user_id: str) -> None:
+    response = test_client.get("/me")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["data"]["id"] == user_id
+    assert data["data"]["email"] == "testuser@example.com"
+
+
+def test_get_me_unauthenticated(unauthenticated_test_client: TestClient) -> None:
+    response = unauthenticated_test_client.get("/me")
+    assert response.status_code == 401

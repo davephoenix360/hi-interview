@@ -13,3 +13,12 @@ class TokenResponse(BaseModel):
 
 class UserTokenInfo(BaseModel):
     user_id: str
+
+
+class MeResponseData(BaseModel):
+    id: str
+    email: str
+
+
+class MeResponse(BaseModel):
+    data: MeResponseData

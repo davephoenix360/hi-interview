@@ -3,8 +3,15 @@ from sqlalchemy import select
 
 from server.business.auth.auth_verifier import AuthVerifier
 from server.business.auth.password import verify_password
-from server.business.auth.schema import LoginRequest, TokenResponse, UserTokenInfo
+from server.business.auth.schema import (
+    LoginRequest,
+    MeResponse,
+    MeResponseData,
+    TokenResponse,
+    UserTokenInfo,
+)
 from server.business.auth.token import create_access_token
+from server.business.user.get import get_user_by_id
 from server.data.models.user import User
 from server.shared.config import Config
 from server.shared.databasemanager import DatabaseManager
@@ -47,5 +54,13 @@ def get_router(
         _: UserTokenInfo = auth_verifier.UserTokenInfo(),
     ) -> PEmpty:
         return PEmpty()
+
+    @router.get("/me")
+    async def me(
+        user_token_info: UserTokenInfo = auth_verifier.UserTokenInfo(),
+    ) -> MeResponse:
+        with database.create_session() as session:
+            user = get_user_by_id(session, user_token_info.user_id)
+            return MeResponse(data=MeResponseData(id=user.id, email=user.email))
 
     return router
