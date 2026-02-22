@@ -21,10 +21,11 @@ export interface NoteAuthor {
 export interface Note {
     id: string;
     client_id: string;
+    author_user_id: string | null;
     body: string;
     created_at: string;
     updated_at: string;
-    author: NoteAuthor;
+    author: NoteAuthor | null;
 }
 
 export interface ClientListItem extends Client {

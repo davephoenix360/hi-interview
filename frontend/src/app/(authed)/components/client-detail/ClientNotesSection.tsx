@@ -217,8 +217,13 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
         }
     };
 
+    const getNoteAuthorLabel = (note: Note): string => note.author?.email ?? "Deleted advisor";
+
     const isSelectedNoteAuthor =
-        selectedNote !== null && me !== null && selectedNote.author.id === me.id;
+        selectedNote !== null &&
+        me !== null &&
+        selectedNote.author_user_id !== null &&
+        selectedNote.author_user_id === me.id;
 
     const handleSaveNote = async () => {
         if (!selectedNote) {
@@ -384,7 +389,7 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                                                     justify="space-between"
                                                     align="flex-start"
                                                     wrap="wrap">
-                                                    <Text fw={500}>{note.author.email}</Text>
+                                                    <Text fw={500}>{getNoteAuthorLabel(note)}</Text>
                                                     <Tooltip
                                                         label={formatExactDate(timestampSource)}
                                                         withArrow>
@@ -425,7 +430,7 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                             align="flex-start"
                             wrap="wrap">
                             <div>
-                                <Text fw={500}>{selectedNote.author.email}</Text>
+                                <Text fw={500}>{getNoteAuthorLabel(selectedNote)}</Text>
                                 <Tooltip
                                     label={formatExactDate(selectedNote.updated_at)}
                                     withArrow>
