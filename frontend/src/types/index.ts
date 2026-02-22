@@ -10,3 +10,12 @@ export interface Me {
 export interface ApiError {
     detail: string;
 }
+
+export type {
+    Advisor,
+    Client,
+    ClientDetail,
+    ClientListItem,
+    Note,
+    NoteAuthor,
+} from "./clients";

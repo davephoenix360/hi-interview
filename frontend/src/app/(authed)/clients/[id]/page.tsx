@@ -9,68 +9,22 @@ import {
     Badge,
     Button,
     Card,
-    CopyButton,
     Group,
     Skeleton,
-    SimpleGrid,
     Stack,
     Text,
     Title,
-    Tooltip,
 } from "@mantine/core";
 
 import { useApi } from "@/api/context";
+import ClientNotesSection from "@/app/(authed)/components/client-detail/ClientNotesSection";
+import ClientOverviewCard from "@/app/(authed)/components/client-detail/ClientOverviewCard";
+import ClientQuickActionsCard from "@/app/(authed)/components/client-detail/ClientQuickActionsCard";
 import { ClientDetail } from "@/types/clients";
 
 import styles from "./page.module.scss";
 
 type ViewState = "loading" | "ready" | "not_found" | "error";
-
-function formatRelativeDate(dateValue: string): string {
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Unknown";
-    }
-
-    const deltaSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-    const absDeltaSeconds = Math.abs(deltaSeconds);
-
-    let value = deltaSeconds;
-    let unit: Intl.RelativeTimeFormatUnit = "second";
-
-    if (absDeltaSeconds >= 31536000) {
-        value = Math.round(deltaSeconds / 31536000);
-        unit = "year";
-    } else if (absDeltaSeconds >= 2592000) {
-        value = Math.round(deltaSeconds / 2592000);
-        unit = "month";
-    } else if (absDeltaSeconds >= 604800) {
-        value = Math.round(deltaSeconds / 604800);
-        unit = "week";
-    } else if (absDeltaSeconds >= 86400) {
-        value = Math.round(deltaSeconds / 86400);
-        unit = "day";
-    } else if (absDeltaSeconds >= 3600) {
-        value = Math.round(deltaSeconds / 3600);
-        unit = "hour";
-    } else if (absDeltaSeconds >= 60) {
-        value = Math.round(deltaSeconds / 60);
-        unit = "minute";
-    }
-
-    return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(value, unit);
-}
-
-function formatExactDate(dateValue: string): string {
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Unknown date";
-    }
-
-    return date.toLocaleString();
-}
 
 export default function ClientDetailsPage() {
     const api = useApi();
@@ -234,82 +188,7 @@ export default function ClientDetailsPage() {
                     <Title order={2}>{fullName}</Title>
                 </Group>
 
-                <Card
-                    withBorder
-                    radius="md"
-                    padding="lg">
-                    <Stack gap="md">
-                        <Text
-                            size="sm"
-                            c="dimmed">Email</Text>
-                        <Group
-                            justify="space-between"
-                            wrap="wrap">
-                            <Text>{client.email}</Text>
-                            <CopyButton
-                                value={client.email}
-                                timeout={1500}>
-                                {({ copied, copy }) => (
-                                    <Button
-                                        variant="light"
-                                        size="xs"
-                                        onClick={copy}>
-                                        {copied ? "Copied" : "Copy"}
-                                    </Button>
-                                )}
-                            </CopyButton>
-                        </Group>
-
-                        <Text
-                            size="sm"
-                            c="dimmed">Client ID</Text>
-                        <Group
-                            justify="space-between"
-                            wrap="wrap">
-                            <Text
-                                size="xs"
-                                ff="monospace"
-                                className={styles.clientId}>
-                                {client.id}
-                            </Text>
-                            <CopyButton
-                                value={client.id}
-                                timeout={1500}>
-                                {({ copied, copy }) => (
-                                    <Button
-                                        variant="default"
-                                        size="xs"
-                                        onClick={copy}>
-                                        {copied ? "Copied" : "Copy ID"}
-                                    </Button>
-                                )}
-                            </CopyButton>
-                        </Group>
-
-                        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                            <Stack gap={4}>
-                                <Text
-                                    size="sm"
-                                    c="dimmed">Created</Text>
-                                <Tooltip
-                                    label={formatExactDate(client.created_at)}
-                                    withArrow>
-                                    <Text>{formatRelativeDate(client.created_at)}</Text>
-                                </Tooltip>
-                            </Stack>
-                            <Stack gap={4}>
-                                <Text
-                                    size="sm"
-                                    c="dimmed">Updated</Text>
-                                <Tooltip
-                                    label={formatExactDate(client.updated_at)}
-                                    withArrow>
-                                    <Text>{formatRelativeDate(client.updated_at)}</Text>
-                                </Tooltip>
-                            </Stack>
-                        </SimpleGrid>
-                    </Stack>
-                </Card>
+                <ClientOverviewCard client={client} />
 
                 <Card
                     withBorder
@@ -387,37 +266,9 @@ export default function ClientDetailsPage() {
                     </Stack>
                 </Card>
 
-                <Card
-                    withBorder
-                    radius="md"
-                    padding="lg">
-                    <Stack gap="sm">
-                        <Title order={4}>Quick actions</Title>
-                        <Group>
-                            <CopyButton
-                                value={client.email}
-                                timeout={1500}>
-                                {({ copied, copy }) => (
-                                    <Button
-                                        variant="light"
-                                        onClick={copy}>
-                                        {copied ? "Email copied" : "Copy email"}
-                                    </Button>
-                                )}
-                            </CopyButton>
-                            <Button
-                                disabled
-                                variant="default">
-                                Add note
-                            </Button>
-                        </Group>
-                        <Text
-                            size="xs"
-                            c="dimmed">
-                            Coming in Task 2
-                        </Text>
-                    </Stack>
-                </Card>
+                <ClientNotesSection clientId={client.id} />
+
+                <ClientQuickActionsCard clientEmail={client.email} />
             </Stack>
         </div>
     );
