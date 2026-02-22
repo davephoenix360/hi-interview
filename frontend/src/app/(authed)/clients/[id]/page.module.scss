@@ -10,6 +10,14 @@
     background: var(--mantine-color-body);
 }
 
+.snapshotRow {
+    gap: var(--mantine-spacing-md);
+}
+
+.snapshotItem {
+    min-width: 180px;
+}
+
 .sectionHeader {
     min-width: 0;
 }

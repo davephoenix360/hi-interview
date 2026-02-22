@@ -3,13 +3,14 @@
 import {
     Button,
     Group,
+    Kbd,
     Notification,
     Table,
     Text,
     TextInput,
     Title,
 } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconSearch } from "@tabler/icons-react";
 
@@ -34,6 +35,8 @@ export default function ClientsPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [toast, setToast] = useState<ToastState>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isMacKeyboard, setIsMacKeyboard] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
 
     const showToast = (nextToast: CreateClientToast) => {
         setToast({
@@ -77,6 +80,45 @@ export default function ClientsPage() {
 
         return () => window.clearTimeout(timeoutId);
     }, [toast]);
+
+    useEffect(() => {
+        if (typeof navigator === "undefined") {
+            return;
+        }
+
+        setIsMacKeyboard(
+            /Mac|iPhone|iPad|iPod/i.test(navigator.platform || "")
+        );
+    }, []);
+
+    useEffect(() => {
+        const handleGlobalKeyDown = (event: KeyboardEvent) => {
+            const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+            if (!isShortcut || event.altKey || event.shiftKey || event.defaultPrevented) {
+                return;
+            }
+
+            const activeElement = document.activeElement;
+            if (
+                activeElement instanceof HTMLInputElement ||
+                activeElement instanceof HTMLTextAreaElement ||
+                activeElement instanceof HTMLSelectElement ||
+                activeElement instanceof HTMLButtonElement ||
+                (activeElement instanceof HTMLElement && activeElement.isContentEditable)
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+            searchInputRef.current?.focus();
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleGlobalKeyDown);
+        };
+    }, []);
 
     const openCreateModal = () => {
         setIsCreateModalOpen(true);
@@ -211,10 +253,22 @@ export default function ClientsPage() {
                     </Group>
 
                     <TextInput
+                        ref={searchInputRef}
                         value={searchQuery}
                         onChange={event => setSearchQuery(event.currentTarget.value)}
                         placeholder="Search by first name, last name, or email"
                         leftSection={<IconSearch size={16} />}
+                        rightSection={
+                            <Group
+                                gap={4}
+                                wrap="nowrap"
+                                className={styles.searchShortcutHint}>
+                                <Kbd>{isMacKeyboard ? "Cmd" : "Ctrl"}</Kbd>
+                                <Kbd>K</Kbd>
+                            </Group>
+                        }
+                        rightSectionWidth={78}
+                        rightSectionPointerEvents="none"
                         className={styles.searchInput}
                     />
                 </div>
@@ -226,7 +280,7 @@ export default function ClientsPage() {
                             <Text
                                 size="sm"
                                 c="dimmed">
-                                No clients match "{searchQuery.trim()}". Try a different name or email.
+                                No clients match &quot;{searchQuery.trim()}&quot;. Try a different name or email.
                             </Text>
                         </div>
                     </div>

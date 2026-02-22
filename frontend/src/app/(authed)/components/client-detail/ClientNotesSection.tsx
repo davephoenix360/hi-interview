@@ -14,6 +14,7 @@ import {
     Stack,
     Text,
     Textarea,
+    Timeline,
     Title,
     Tooltip,
     UnstyledButton,
@@ -27,13 +28,20 @@ import { formatExactDate, formatRelativeDate } from "./dateUtils";
 import styles from "./ClientNotesSection.module.scss";
 
 type NoteModalMode = "view" | "edit";
+type NoteTimelineGroupKey = "today" | "this_week" | "older";
+
+export interface ClientNotesSnapshotState {
+    notes: Note[];
+    loading: boolean;
+}
 
 interface ClientNotesSectionProps {
     clientId: string;
+    onNotesSnapshotChange?: (snapshot: ClientNotesSnapshotState) => void;
 }
 
 function getNotePreview(body: string): string {
-    const normalized = body.replace(/\s+/g, " ").trim();
+    const normalized = body.replace(/\r\n?/g, "\n").trim();
 
     if (!normalized) {
         return "Empty note";
@@ -42,7 +50,45 @@ function getNotePreview(body: string): string {
     return normalized;
 }
 
-export default function ClientNotesSection({ clientId }: ClientNotesSectionProps) {
+function getNoteTimestampSource(note: Note): string {
+    return note.updated_at !== note.created_at
+        ? note.updated_at
+        : note.created_at;
+}
+
+function isSameLocalDay(left: Date, right: Date): boolean {
+    return (
+        left.getFullYear() === right.getFullYear() &&
+        left.getMonth() === right.getMonth() &&
+        left.getDate() === right.getDate()
+    );
+}
+
+function getStartOfLocalWeek(date: Date): Date {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay());
+    return start;
+}
+
+function getNoteTimelineGroup(createdAt: string, now: Date): NoteTimelineGroupKey {
+    const createdDate = new Date(createdAt);
+
+    if (isSameLocalDay(createdDate, now)) {
+        return "today";
+    }
+
+    if (createdDate >= getStartOfLocalWeek(now)) {
+        return "this_week";
+    }
+
+    return "older";
+}
+
+export default function ClientNotesSection({
+    clientId,
+    onNotesSnapshotChange,
+}: ClientNotesSectionProps) {
     const api = useApi();
 
     const [notes, setNotes] = useState<Note[]>([]);
@@ -98,6 +144,13 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
             window.clearTimeout(timeoutId);
         };
     }, [notesActionNotice]);
+
+    useEffect(() => {
+        onNotesSnapshotChange?.({
+            notes,
+            loading: notesLoading,
+        });
+    }, [notes, notesLoading, onNotesSnapshotChange]);
 
     useEffect(() => {
         if (!clientId) {
@@ -400,62 +453,112 @@ export default function ClientNotesSection({ clientId }: ClientNotesSectionProps
                             </Text>
                         </div>
                     ) : (
-                        <Stack gap="sm">
-                            {notes.map(note => {
-                                const timestampSource =
-                                    note.updated_at !== note.created_at
-                                        ? note.updated_at
-                                        : note.created_at;
-                                const timestampLabel =
-                                    note.updated_at !== note.created_at
-                                        ? `Edited ${formatRelativeDate(timestampSource)}`
-                                        : formatRelativeDate(timestampSource);
+                        (() => {
+                            const now = new Date();
+                            const sortedNotes = [...notes].sort(
+                                (a, b) =>
+                                    new Date(b.created_at).getTime() -
+                                    new Date(a.created_at).getTime()
+                            );
+                            const groupedNotes: Record<NoteTimelineGroupKey, Note[]> = {
+                                today: [],
+                                this_week: [],
+                                older: [],
+                            };
 
-                                return (
-                                    <UnstyledButton
-                                        key={note.id}
-                                        className={styles.noteCardButton}
-                                        onClick={() => openNoteModal(note)}
-                                    >
-                                        <Card
-                                            withBorder
-                                            radius="md"
-                                            padding="md"
-                                            className={styles.noteCard}>
-                                            <Stack gap="xs">
-                                                <Group
-                                                    justify="space-between"
-                                                    align="center"
-                                                    wrap="wrap"
-                                                    className={styles.noteCardMetaRow}>
-                                                    <Text
-                                                        fw={500}
-                                                        className={styles.noteCardAuthor}>
-                                                        {getNoteAuthorLabel(note)}
-                                                    </Text>
-                                                    <Tooltip
-                                                        label={formatExactDate(timestampSource)}
-                                                        withArrow>
-                                                        <Text
-                                                            size="xs"
-                                                            c="dimmed"
-                                                            className={styles.noteCardTimestamp}>
-                                                            {timestampLabel}
-                                                        </Text>
-                                                    </Tooltip>
-                                                </Group>
+                            sortedNotes.forEach(note => {
+                                groupedNotes[getNoteTimelineGroup(note.created_at, now)].push(note);
+                            });
+
+                            const groupDefinitions: Array<{
+                                key: NoteTimelineGroupKey;
+                                label: string;
+                            }> = [
+                                { key: "today", label: "Today" },
+                                { key: "this_week", label: "This week" },
+                                { key: "older", label: "Older" },
+                            ];
+
+                            return (
+                                <Stack gap="xs">
+                                    {groupDefinitions.map(group => {
+                                        const groupNotes = groupedNotes[group.key];
+
+                                        if (groupNotes.length === 0) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <Stack
+                                                key={group.key}
+                                                gap={6}
+                                                className={styles.noteTimelineSection}>
                                                 <Text
-                                                    size="sm"
-                                                    c={note.body.trim() ? undefined : "dimmed"}
-                                                    className={styles.notePreview}>
-                                                    {getNotePreview(note.body)}
+                                                    size="xs"
+                                                    c="dimmed"
+                                                    fw={600}>
+                                                    {group.label}
                                                 </Text>
+                                                <Timeline
+                                                    align="left"
+                                                    bulletSize={14}
+                                                    lineWidth={2}
+                                                    className={styles.noteTimeline}>
+                                                    {groupNotes.map(note => {
+                                                        const timestampSource = getNoteTimestampSource(note);
+                                                        const timestampLabel =
+                                                            note.updated_at !== note.created_at
+                                                                ? `Edited ${formatRelativeDate(timestampSource)}`
+                                                                : formatRelativeDate(timestampSource);
+
+                                                        return (
+                                                            <Timeline.Item
+                                                                key={note.id}
+                                                                className={styles.noteTimelineItem}>
+                                                                <UnstyledButton
+                                                                    className={styles.noteTimelineButton}
+                                                                    onClick={() => openNoteModal(note)}>
+                                                                    <Stack gap={4}>
+                                                                        <Group
+                                                                            justify="space-between"
+                                                                            align="center"
+                                                                            wrap="wrap"
+                                                                            className={styles.noteCardMetaRow}>
+                                                                            <Text
+                                                                                fw={500}
+                                                                                size="sm"
+                                                                                className={styles.noteCardAuthor}>
+                                                                                {getNoteAuthorLabel(note)}
+                                                                            </Text>
+                                                                            <Tooltip
+                                                                                label={formatExactDate(timestampSource)}
+                                                                                withArrow>
+                                                                                <Text
+                                                                                    size="xs"
+                                                                                    c="dimmed"
+                                                                                    className={styles.noteCardTimestamp}>
+                                                                                    {timestampLabel}
+                                                                                </Text>
+                                                                            </Tooltip>
+                                                                        </Group>
+                                                                        <Text
+                                                                            size="sm"
+                                                                            c={note.body.trim() ? undefined : "dimmed"}
+                                                                            className={styles.preview}>
+                                                                            {getNotePreview(note.body)}
+                                                                        </Text>
+                                                                    </Stack>
+                                                                </UnstyledButton>
+                                                            </Timeline.Item>
+                                                        );
+                                                    })}
+                                                </Timeline>
                                             </Stack>
-                                        </Card>
-                                    </UnstyledButton>
-                                );
-                            })}
-                        </Stack>
+                                        );
+                                    })}
+                                </Stack>
+                            );
+                        })()
                     )}
                 </Stack>
             </Card>

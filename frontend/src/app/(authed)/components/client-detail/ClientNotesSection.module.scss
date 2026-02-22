@@ -33,6 +33,48 @@
     transform: translateY(-1px);
 }
 
+.noteTimeline {
+    :global(.mantine-Timeline-itemBody) {
+        padding-bottom: var(--mantine-spacing-xs);
+    }
+
+    :global(.mantine-Timeline-itemTitle) {
+        margin-bottom: 0;
+    }
+}
+
+.noteTimelineItem {
+    min-width: 0;
+}
+
+.noteTimelineSection {
+    min-width: 0;
+}
+
+.noteTimelineButton {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border-radius: var(--mantine-radius-md);
+    padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+    margin-left: calc(-1 * var(--mantine-spacing-sm));
+    transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.noteTimelineButton:hover {
+    background: var(--mantine-primary-color-0);
+    box-shadow: var(--mantine-shadow-xs);
+    transform: translateY(-1px);
+}
+
+.noteTimelineButton:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+}
+
 .noteCardMetaRow {
     min-width: 0;
 }
@@ -45,13 +87,12 @@
     white-space: nowrap;
 }
 
-.notePreview {
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.preview {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-line;
     overflow-wrap: anywhere;
     line-height: 1.45;
 }

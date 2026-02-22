@@ -30,6 +30,10 @@
     max-width: 520px;
 }
 
+.searchShortcutHint {
+    white-space: nowrap;
+}
+
 .section + .section {
     margin-top: var(--mantine-spacing-xl);
 }

@@ -14,13 +14,17 @@ import {
     Skeleton,
     Stack,
     Text,
+    Tooltip,
     Title,
 } from "@mantine/core";
 
 import { useApi } from "@/api/context";
-import ClientNotesSection from "@/app/(authed)/components/client-detail/ClientNotesSection";
+import ClientNotesSection, {
+    type ClientNotesSnapshotState,
+} from "@/app/(authed)/components/client-detail/ClientNotesSection";
 import ClientOverviewCard from "@/app/(authed)/components/client-detail/ClientOverviewCard";
 import ClientQuickActionsCard from "@/app/(authed)/components/client-detail/ClientQuickActionsCard";
+import { formatExactDate, formatRelativeDate } from "@/app/(authed)/components/client-detail/dateUtils";
 import { ClientDetail } from "@/types/clients";
 
 import styles from "./page.module.scss";
@@ -44,6 +48,10 @@ export default function ClientDetailsPage() {
     const [joiningTeam, setJoiningTeam] = useState(false);
     const [joinTeamError, setJoinTeamError] = useState<string | null>(null);
     const [isAdvisoryTeamExpanded, setIsAdvisoryTeamExpanded] = useState(true);
+    const [notesSnapshot, setNotesSnapshot] = useState<ClientNotesSnapshotState>({
+        notes: [],
+        loading: true,
+    });
 
     useEffect(() => {
         if (!clientId) {
@@ -70,6 +78,13 @@ export default function ClientDetailsPage() {
                 setViewState("error");
             });
     }, [api, clientId]);
+
+    useEffect(() => {
+        setNotesSnapshot({
+            notes: [],
+            loading: true,
+        });
+    }, [clientId]);
 
     if (viewState === "loading") {
         return (
@@ -147,6 +162,17 @@ export default function ClientDetailsPage() {
     }
 
     const fullName = `${client.first_name} ${client.last_name}`;
+    const lastNoteTimestamp = notesSnapshot.notes.reduce<string | null>((latestTimestamp, note) => {
+        const candidateTimestamp = note.updated_at || note.created_at;
+
+        if (!latestTimestamp) {
+            return candidateTimestamp;
+        }
+
+        return new Date(candidateTimestamp).getTime() > new Date(latestTimestamp).getTime()
+            ? candidateTimestamp
+            : latestTimestamp;
+    }, null);
 
     const handleJoinAdvisoryTeam = async () => {
         setJoiningTeam(true);
@@ -184,6 +210,100 @@ export default function ClientDetailsPage() {
                             clientEmail={client.email} />
                     </Group>
                 </Stack>
+
+                <Card
+                    withBorder
+                    radius="md"
+                    padding="lg"
+                    className={styles.sectionCard}>
+                    <Stack gap="sm">
+                        <Text fw={600}>Client Snapshot</Text>
+                        <Divider />
+                        <Group
+                            grow
+                            align="flex-start"
+                            wrap="wrap"
+                            className={styles.snapshotRow}>
+                            <Stack
+                                gap={2}
+                                className={styles.snapshotItem}>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    Total notes
+                                </Text>
+                                {notesSnapshot.loading ? (
+                                    <Skeleton
+                                        height={18}
+                                        width={48} />
+                                ) : (
+                                    <Text fw={500}>{notesSnapshot.notes.length}</Text>
+                                )}
+                            </Stack>
+                            <Stack
+                                gap={2}
+                                className={styles.snapshotItem}>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    Last note
+                                </Text>
+                                {notesSnapshot.loading ? (
+                                    <Skeleton
+                                        height={18}
+                                        width={120} />
+                                ) : lastNoteTimestamp ? (
+                                    <Tooltip
+                                        label={formatExactDate(lastNoteTimestamp)}
+                                        withArrow>
+                                        <Text fw={500}>
+                                            {formatRelativeDate(lastNoteTimestamp)}
+                                        </Text>
+                                    </Tooltip>
+                                ) : (
+                                    <Text
+                                        fw={500}
+                                        c="dimmed">
+                                        No notes yet
+                                    </Text>
+                                )}
+                            </Stack>
+                        </Group>
+                        <Divider />
+                        <Group
+                            grow
+                            align="flex-start"
+                            wrap="wrap"
+                            className={styles.snapshotRow}>
+                            <Stack
+                                gap={2}
+                                className={styles.snapshotItem}>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    Advisors
+                                </Text>
+                                <Text fw={500}>{client.advisors.length}</Text>
+                            </Stack>
+                            <Stack
+                                gap={2}
+                                className={styles.snapshotItem}>
+                                <Text
+                                    size="sm"
+                                    c="dimmed">
+                                    Member since
+                                </Text>
+                                <Tooltip
+                                    label={formatExactDate(client.created_at)}
+                                    withArrow>
+                                    <Text fw={500}>
+                                        {formatRelativeDate(client.created_at)}
+                                    </Text>
+                                </Tooltip>
+                            </Stack>
+                        </Group>
+                    </Stack>
+                </Card>
 
                 <Divider />
 
@@ -291,7 +411,10 @@ export default function ClientDetailsPage() {
 
                 <Divider />
 
-                <ClientNotesSection clientId={client.id} />
+                <ClientNotesSection
+                    clientId={client.id}
+                    onNotesSnapshotChange={setNotesSnapshot}
+                />
             </Stack>
         </div>
     );
