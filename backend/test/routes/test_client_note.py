@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
+from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from server.business.client_note.schema import PClientNote
 from server.business.auth.token import create_access_token
 from server.data.models.client import Client
 from server.data.models.client_advisor import ClientAdvisor
@@ -67,6 +69,7 @@ def test_advisor_can_create_blank_note(
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["client_id"] == client_id
+    assert data["author_user_id"] == user_id
     assert data["body"] == ""
     assert data["author"]["id"] == user_id
     assert data["author"]["email"] == "testuser@example.com"
@@ -94,6 +97,7 @@ def test_author_can_patch_note(
     data = patch_response.json()["data"]
     assert data["id"] == note_id
     assert data["client_id"] == client_id
+    assert data["author_user_id"] == user_id
     assert data["body"] == "Updated note body"
     assert data["author"]["id"] == user_id
 
@@ -150,6 +154,51 @@ def test_patch_rejects_invalid_bodies(
         json={"body": "x" * 10001},
     )
     assert too_long_response.status_code in (400, 422)
+
+
+def test_note_still_lists_after_advisor_removed_from_client(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    client_id = _create_client(database, "notes-list-after-unassign")
+    _add_advisor(database, client_id, user_id)
+
+    create_response = test_client.post(f"/client/{client_id}/notes")
+    assert create_response.status_code == 200
+    note_id = create_response.json()["data"]["id"]
+
+    with database.create_session() as session:
+        assignment = session.get(ClientAdvisor, (client_id, user_id))
+        assert assignment is not None
+        session.delete(assignment)
+        session.commit()
+
+    list_response = test_client.get(f"/client/{client_id}/notes")
+
+    assert list_response.status_code == 200
+    data = list_response.json()["data"]
+    assert len(data) == 1
+    assert data[0]["id"] == note_id
+    assert data[0]["author_user_id"] == user_id
+    assert data[0]["author"]["id"] == user_id
+
+
+def test_client_note_schema_allows_missing_author_object() -> None:
+    now = datetime.now()
+    orphan_author_user_id = str(uuid.uuid4())
+    orphan_note = SimpleNamespace(
+        id=str(uuid.uuid4()),
+        client_id=str(uuid.uuid4()),
+        author_user_id=orphan_author_user_id,
+        body="Legacy/orphaned note",
+        created_at=now,
+        updated_at=now,
+        author=None,
+    )
+
+    parsed = PClientNote.model_validate(orphan_note)
+
+    assert parsed.author is None
+    assert parsed.author_user_id == orphan_author_user_id
 
 
 def test_author_can_delete_note(

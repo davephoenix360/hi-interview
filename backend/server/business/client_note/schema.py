@@ -13,10 +13,11 @@ class PUserLite(BaseModel):
 class PClientNote(BaseModel):
     id: str
     client_id: str
+    author_user_id: str | None
     body: str
     created_at: datetime
     updated_at: datetime
-    author: PUserLite
+    author: PUserLite | None
 
 
 class PClientNoteResponse(BaseModel):
