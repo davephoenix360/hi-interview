@@ -119,3 +119,76 @@ def test_get_existing_client(
     advisor_emails = [advisor["email"] for advisor in data["data"]["advisors"]]
     assert "testuser@example.com" in advisor_emails
     assert "detail-advisor@example.com" in advisor_emails
+
+
+def test_add_current_user_as_advisor(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    with database.create_session() as session:
+        client = Client(
+            email="post-advisor@example.com",
+            first_name="Post",
+            last_name="Advisor",
+        )
+        session.add(client)
+        session.commit()
+        client_id = client.id
+
+    response = test_client.post(f"/client/{client_id}/advisors/me")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["data"]["id"] == client_id
+    assert data["data"]["is_my_client"] is True
+    advisor_ids = [advisor["id"] for advisor in data["data"]["advisors"]]
+    assert user_id in advisor_ids
+
+    with database.create_session() as session:
+        assignments = (
+            session.query(ClientAdvisor)
+            .filter(
+                ClientAdvisor.client_id == client_id,
+                ClientAdvisor.user_id == user_id,
+            )
+            .all()
+        )
+        assert len(assignments) == 1
+
+
+def test_add_current_user_as_advisor_is_idempotent(
+    test_client: TestClient, database: DatabaseManager, user_id: str
+) -> None:
+    with database.create_session() as session:
+        client = Client(
+            email="post-advisor-idempotent@example.com",
+            first_name="Idempotent",
+            last_name="Advisor",
+        )
+        session.add(client)
+        session.flush()
+        session.add(ClientAdvisor(client_id=client.id, user_id=user_id))
+        session.commit()
+        client_id = client.id
+
+    first_response = test_client.post(f"/client/{client_id}/advisors/me")
+    second_response = test_client.post(f"/client/{client_id}/advisors/me")
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+    with database.create_session() as session:
+        assignments = (
+            session.query(ClientAdvisor)
+            .filter(
+                ClientAdvisor.client_id == client_id,
+                ClientAdvisor.user_id == user_id,
+            )
+            .all()
+        )
+        assert len(assignments) == 1
+
+
+def test_add_current_user_as_advisor_nonexistent_client(test_client: TestClient) -> None:
+    response = test_client.post("/client/999999/advisors/me")
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Client not found"
