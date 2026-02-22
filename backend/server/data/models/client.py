@@ -9,6 +9,7 @@ from sqlalchemy.sql import func
 from server.data.models.base import Base
 
 if TYPE_CHECKING:
+    from server.data.models.client_notes import ClientNote
     from server.data.models.user import User
 
 
@@ -33,4 +34,7 @@ class Client(Base):
 
     assigned_user: Mapped["User | None"] = relationship(
         "User", foreign_keys=[assigned_user_id]
+    )
+    notes: Mapped[list["ClientNote"]] = relationship(
+        "ClientNote", back_populates="client"
     )
